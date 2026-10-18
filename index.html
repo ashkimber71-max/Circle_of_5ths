@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Circle of fifths</title>
+<title>Music Theory Buster</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -32,7 +32,7 @@
   --cell-s:22%; --cell-l:17%; --key-s:42%; --key-l:31%; --tonic-s:58%; --tonic-l:45%;
   --hl-s:75%; --hl-l:66%;
   --good:#1D3B2C; --good-ink:#9BE3B8; --bad:#43221F; --bad-ink:#F5A9A1;
-  --out:.42;
+  --out:.42; --accent:#F27BA8;
 }
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:inherit}
@@ -304,6 +304,41 @@ select:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
 .pl.playing{border-color:var(--ink); background:hsl(var(--h) var(--key-s) var(--key-l))}
 .pl:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
 
+/* home */
+.brand{display:flex; align-items:center; gap:.75rem; margin:0 0 1rem}
+.brand h1{margin:0}
+.brand-btn{border:0; background:none; padding:0; cursor:pointer; text-align:left; color:inherit}
+.brand-btn:focus-visible{outline:2px solid var(--ink); outline-offset:4px; border-radius:8px}
+.brand-mark{flex:none; width:44px; height:44px}
+.home-intro{font-size:1.15rem}
+.home-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:1rem}
+.home-card{border:1px solid var(--line); background:var(--surface); border-radius:22px; padding:1.25rem 1.3rem 1.3rem; cursor:pointer; text-align:left;
+  display:flex; flex-direction:column; gap:.55rem; transition:transform .18s ease,border-color .18s,box-shadow .18s}
+.home-card:hover{transform:translateY(-2px); border-color:var(--muted); box-shadow:0 6px 18px rgba(20,30,60,.08)}
+.home-card:focus-visible{outline:2px solid var(--ink); outline-offset:3px}
+.home-card .ico{width:52px; height:52px; border-radius:16px; display:grid; place-items:center; background:hsl(var(--h) var(--key-s) var(--key-l)); color:var(--ink)}
+.home-card .ico svg{width:30px; height:30px}
+.home-card b{font-size:1.2rem; font-weight:600; letter-spacing:-.01em}
+.home-card span.d{color:var(--muted); font-size:.93rem; font-weight:300}
+.home-card .go{margin-top:auto; padding-top:.3rem; font-size:.88rem; font-weight:500; color:var(--ink)}
+.tab-home{display:inline-flex; align-items:center; gap:.35rem}
+.tab-home svg{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linejoin:round}
+
+/* piano */
+.piano-btn[aria-expanded="true"]{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+.piano-btn{margin-left:0}
+.piano-wrap{margin:1rem auto 0; max-width:440px; text-align:center}
+svg.piano{display:block; width:100%; height:auto; cursor:pointer}
+.piano .wk{fill:#FFFFFF; stroke:var(--muted); stroke-width:1}
+.piano .bk{fill:#1F2A44; stroke:#1F2A44; stroke-width:1}
+.piano .on{fill:hsl(var(--ph) var(--hl-s) var(--hl-l)); stroke:var(--ink)}
+.piano text{font-family:inherit; text-anchor:middle; dominant-baseline:central; pointer-events:none}
+.piano .lbl{font-size:10px; font-weight:600; fill:#fff}
+.piano .clbl{font-size:8.5px; fill:#66708A}
+.piano-cap{margin:.45rem 0 0; font-size:.88rem; color:var(--muted)}
+.piano-cap button{margin-left:.6rem; display:inline-flex; align-items:center; gap:.4rem; vertical-align:middle}
+.piano-cap button svg{width:10px; height:10px; fill:currentColor}
+
 [hidden]{display:none !important}
 @media (prefers-reduced-motion: reduce){
   .rot,.up,.frame,.cell path,.cell text,.chord,.flip-inner,.bar i,.practice.tri{transition:none}
@@ -316,9 +351,22 @@ select:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
 <body>
 <main>
   <header>
-    <h1>The circle of fifths</h1>
-    <div class="tabs" role="tablist" aria-label="Choose an activity">
-      <button class="tab" role="tab" id="tab-explore" aria-controls="view-explore" aria-selected="true">Explore the circle</button>
+    <div class="brand">
+      <button class="brand-btn" id="brandBtn" aria-label="Music Theory Buster: go to the home page">
+        <span class="brand" style="margin:0">
+          <svg class="brand-mark" viewBox="0 0 44 44" aria-hidden="true">
+            <circle cx="22" cy="22" r="20" fill="hsl(242 72% 84%)"/><circle cx="22" cy="22" r="20" fill="none" stroke="currentColor" stroke-width="2"/>
+            <circle cx="22" cy="22" r="11" fill="none" stroke="currentColor" stroke-width="2"/>
+            <path d="M22 2v9M22 33v9M2 22h9M33 22h9M7.9 7.9l6.4 6.4M29.7 29.7l6.4 6.4M7.9 36.1l6.4-6.4M29.7 14.3l6.4-6.4" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M24.5 15v10.5" stroke="currentColor" stroke-width="2"/><ellipse cx="21.6" cy="26" rx="3.6" ry="2.7" transform="rotate(-20 21.6 26)" fill="currentColor"/>
+          </svg>
+          <h1>Music Theory Buster</h1>
+        </span>
+      </button>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Choose an activity" id="tabBar" hidden>
+      <button class="tab tab-home" role="tab" id="tab-home" aria-controls="view-home" aria-selected="true"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M1.5 6.5 7 1.8l5.5 4.7V12.3H8.6V8.6H5.4v3.7H1.5z"/></svg>Home</button>
+      <button class="tab" role="tab" id="tab-explore" aria-controls="view-explore" aria-selected="false" tabindex="-1">Circle of 5ths</button>
       <button class="tab" role="tab" id="tab-cards" aria-controls="view-cards" aria-selected="false" tabindex="-1">Key signature cards</button>
       <button class="tab" role="tab" id="tab-triads" aria-controls="view-triads" aria-selected="false" tabindex="-1">Name the triad</button>
       <button class="tab" role="tab" id="tab-ear" aria-controls="view-ear" aria-selected="false" tabindex="-1">Hear the chord</button>
@@ -327,8 +375,21 @@ select:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
     </div>
   </header>
 
+  <!-- ============ HOME ============ -->
+  <section id="view-home" role="tabpanel" aria-labelledby="tab-home">
+    <p class="intro home-intro">Pick a section to get started. You can come back here any time with the Home button or by clicking the title.</p>
+    <div class="home-grid">
+      <button class="home-card" data-go="explore" style="--h:212"><span class="ico" aria-hidden="true"><svg viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="15" cy="15" r="12.5"/><circle cx="15" cy="15" r="6"/><path d="M15 2.5V9M15 21v6.5M2.5 15H9M21 15h6.5"/><path d="M11 3.2 15 9l4-5.8" stroke-linejoin="round"/></svg></span><b>Circle of 5ths</b><span class="d">Turn the wheel to any key and see its sharps or flats, its scale and the seven chords that belong to it.</span><span class="go" aria-hidden="true">Open →</span></button>
+      <button class="home-card" data-go="cards" style="--h:272"><span class="ico" aria-hidden="true"><svg viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="6" width="17" height="21" rx="3"/><path d="M9 3h14a3 3 0 0 1 3 3v17"/><path d="M8 13h9M8 16.5h9M8 20h9"/><text x="10.5" y="11.8" font-size="7" fill="currentColor" stroke="none">♯</text></svg></span><b>Key signature cards</b><span class="d">Flash cards for naming the major key from its key signature, in treble or bass clef.</span><span class="go" aria-hidden="true">Open →</span></button>
+      <button class="home-card" data-go="triads" style="--h:332"><span class="ico" aria-hidden="true"><svg viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7h24M3 12h24M3 17h24M3 22h24" stroke-width="1"/><ellipse cx="15" cy="22" rx="3.6" ry="2.5" fill="currentColor"/><ellipse cx="15" cy="17" rx="3.6" ry="2.5" fill="currentColor"/><ellipse cx="15" cy="12" rx="3.6" ry="2.5" fill="currentColor"/></svg></span><b>Name the triad</b><span class="d">Read a triad on the stave and name it, from one key up to inversions and every triad type.</span><span class="go" aria-hidden="true">Open →</span></button>
+      <button class="home-card" data-go="ear" style="--h:32"><span class="ico" aria-hidden="true"><svg viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 21c0-4 7-5 7-11a5.5 5.5 0 0 0-11 0"/><path d="M10 21c0 3 1.5 5 4 5"/><path d="M21 9c1.5 2 1.5 6 0 8M24.5 6.5c3 3.5 3 9.5 0 13"/></svg></span><b>Hear the chord</b><span class="d">Ear training: hear the home chord, then a second chord, and work out which one it was.</span><span class="go" aria-hidden="true">Open →</span></button>
+      <button class="home-card" data-go="minor" style="--h:152"><span class="ico" aria-hidden="true"><svg viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 26h5v-4h4v-4h3v-3h4v-4h4V7h4"/><circle cx="8" cy="22" r="1.4" fill="currentColor"/><circle cx="15" cy="15" r="1.4" fill="currentColor"/><circle cx="23" cy="7" r="1.4" fill="currentColor"/></svg></span><b>Minor scales</b><span class="d">Natural, harmonic and melodic minor scales, to listen to and practise, with a quiz.</span><span class="go" aria-hidden="true">Open →</span></button>
+      <button class="home-card" data-go="modes" style="--h:92"><span class="ico" aria-hidden="true"><svg viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 8h22M4 15h22M4 22h22" stroke-width="1"/><circle cx="7" cy="22" r="2.2" fill="currentColor"/><circle cx="13" cy="15" r="2.2" fill="currentColor"/><circle cx="19" cy="8" r="2.2" fill="currentColor"/><circle cx="25" cy="15" r="2.2"/></svg></span><b>Modes</b><span class="d">Learn how each mode sounds and where it comes from, hear it in a melody, then test your ear.</span><span class="go" aria-hidden="true">Open →</span></button>
+    </div>
+  </section>
+
   <!-- ============ EXPLORE ============ -->
-  <section id="view-explore" role="tabpanel" aria-labelledby="tab-explore">
+  <section id="view-explore" role="tabpanel" aria-labelledby="tab-explore" hidden>
     <p class="intro">Choose a key in the inner ring. The window frames the chords that belong to it, and the outer ring tells you its sharps or flats.</p>
     <div class="layout">
       <div>
@@ -388,13 +449,14 @@ select:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
         </div>
         <label class="sel" id="triKeyWrap">Key <select id="triKey"></select></label>
         <button class="btn help-btn" id="helpBtn" aria-expanded="false" aria-controls="helpPanel">Help</button>
+        <button class="btn piano-btn" id="pianoBtn" aria-expanded="false">Show on piano</button>
       </div>
       <p class="level-desc" id="levelDesc"></p>
       <div class="tri-grid">
         <div>
           <div class="quiz-card" id="quizCard"></div>
           <div class="score"><span id="triScore"></span><button class="linkish" id="triReset">Reset score</button></div>
-          <p class="hint-keys">Press 1–4 to answer, Enter for the next triad and H for help.</p>
+          <p class="hint-keys">Press 1–4 to answer, Enter for the next triad, H for help and K for the piano.</p>
         </div>
         <aside class="panel help-panel" id="helpPanel" aria-label="Key help" hidden></aside>
       </div>
@@ -491,7 +553,7 @@ select:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
         <div class="scard" id="modeSide"></div>
       </div>
       </div>
-      <p class="hint-keys" id="modeHint">Press 1–7 to choose a mode, P to play it, D to play it over a drone and C to compare.</p>
+      <p class="hint-keys" id="modeHint">Press 1–7 to choose a mode, P to play it, D to play it over a drone, M to hear it in a melody and C to compare.</p>
     </div>
   </section>
 </main>
@@ -748,7 +810,7 @@ select:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
 
   /* ================= tabs ================= */
   const tabs = [...document.querySelectorAll(".tab")];
-  let activeView = "explore";
+  let activeView = "home";
   function showTab(tab){
     tabs.forEach(t => {
       const on = t === tab;
@@ -757,8 +819,13 @@ select:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
       document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
     });
     activeView = tab.id.replace("tab-", "");
+    document.getElementById("tabBar").hidden = activeView === "home";
     Sound.stop();
+    window.scrollTo({top:0});
   }
+  const goTo = v => { const t = document.getElementById("tab-" + v); showTab(t); (v === "home" ? document.querySelector(".home-card") : t).focus({preventScroll:true}); };
+  document.querySelectorAll(".home-card").forEach(b => b.addEventListener("click", () => goTo(b.dataset.go)));
+  document.getElementById("brandBtn").addEventListener("click", () => goTo("home"));
   tabs.forEach((t, i) => {
     t.addEventListener("click", () => showTab(t));
     t.addEventListener("keydown", e => {
@@ -1022,7 +1089,8 @@ select:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
     const INV = ["root position", "1st inversion", "2nd inversion"];
     const ROLE = ["root", "third", "fifth"];
     const NUMERALS = ["I","ii","iii","IV","V","vi"];
-    const st = {level:1, clef:"treble", key:"C", score:0, asked:0, q:null, answered:false, chosen:null, help:false};
+    const st = {level:1, clef:"treble", key:"C", score:0, asked:0, q:null, answered:false, chosen:null, help:false, piano:false};
+    const pianoBtn = document.getElementById("pianoBtn");
     const helpPanel = document.getElementById("helpPanel"), helpBtn = document.getElementById("helpBtn");
     const card = document.getElementById("quizCard");
 
@@ -1108,6 +1176,7 @@ select:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
       const sigKey = q.key ? {type:q.key.type, n:q.key.n} : null;
       const staffLabel = "Triad on a " + st.clef + " stave" + (q.key ? ", " + sigLabel(sigKey).toLowerCase() : "") + ". Notes from the bottom: " + q.notes.map(noteName).join(", ");
       let html = staffSVG({clef: st.clef, key: sigKey, notes: q.notes, highlight: st.answered ? rootHighlight(q) : null, label: staffLabel});
+      if (st.piano) html += pianoHTML(q);
       html += `<p class="prompt" style="text-align:center">${q.key && st.level > 1 ? `In ${q.key.name} major, which triad is this?` : "Which triad is this?"}</p>`;
       html += `<div class="options">` + q.options.map((o, i) => {
         let cls = "";
@@ -1132,11 +1201,53 @@ select:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
       }
       card.innerHTML = html;
       card.querySelectorAll(".opt").forEach(b => b.addEventListener("click", () => answer(+b.dataset.o)));
+      const pw = card.querySelector(".piano-wrap");
+      if (pw){ pw.querySelector("svg").addEventListener("click", playTriad); pw.querySelector("button").addEventListener("click", playTriad); }
+      pianoBtn.setAttribute("aria-expanded", st.piano);
+      pianoBtn.textContent = st.piano ? "Hide piano" : "Show on piano";
       const nx = document.getElementById("nextQ");
       if (nx){ nx.addEventListener("click", next); nx.focus({preventScroll:true}); }
       renderHelp();
       document.getElementById("triScore").textContent = st.asked ? `${st.score} correct out of ${st.asked}` : "No answers yet";
     }
+    // a keyboard with the triad's notes picked out; enharmonic spellings sit on the right key (E♯ on F)
+    function pianoHTML(q){
+      const ms = q.notes.map(n => Sound.midi(n));
+      let lo = Math.min(...ms), hi = Math.max(...ms);
+      lo -= mod(lo); hi += 11 - mod(hi);
+      if (hi - lo < 23) hi = lo + 23;
+      const WW = 26, WH = 104, BW = 16, BH = 64, black = [1,3,6,8,10];
+      const ph = 212;
+      let whites = "", blacks = "", labels = "", x = 0;
+      const pos = {};
+      for (let m = lo; m <= hi; m++){
+        if (black.includes(mod(m))) continue;
+        pos[m] = x; x += WW;
+      }
+      for (let m = lo; m <= hi; m++) if (black.includes(mod(m))) pos[m] = pos[m - 1] + WW - BW / 2;
+      const on = m => ms.includes(m);
+      const nameAt = m => q.notes.filter(n => Sound.midi(n) === m).map(noteName).join("/");
+      for (let m = lo; m <= hi; m++){
+        const b = black.includes(mod(m)), X = pos[m];
+        if (!b){
+          whites += `<rect class="wk${on(m) ? " on" : ""}" x="${X + .5}" y=".5" width="${WW - 1}" height="${WH}" rx="3"/>`;
+          if (on(m)) labels += `<text class="lbl" x="${X + WW / 2}" y="${WH - 14}">${nameAt(m)}</text>`;
+          else if (mod(m) === 0) labels += `<text class="clbl" x="${X + WW / 2}" y="${WH - 10}">C${Math.floor(m / 12) - 1}</text>`;
+        } else {
+          blacks += `<rect class="bk${on(m) ? " on" : ""}" x="${X}" y=".5" width="${BW}" height="${BH}" rx="2"/>`;
+          if (on(m)) labels += `<text class="lbl" x="${X + BW / 2}" y="${BH - 12}" style="font-size:8.5px">${nameAt(m)}</text>`;
+        }
+      }
+      const desc = q.notes.map(noteName).join(", ");
+      return `<div class="piano-wrap"><svg class="piano" viewBox="0 0 ${x + 1} ${WH + 2}" style="--ph:${ph}" role="img" aria-label="Piano keyboard showing ${desc}. Click to hear it.">${whites}${blacks}${labels}</svg>
+        <p class="piano-cap">From the bottom: ${desc}<button class="btn" style="padding:.3rem .8rem; font-size:.85rem">${playIco} Play</button></p></div>`;
+    }
+    function playTriad(){
+      const ms = st.q.notes.map(n => Sound.midi(n));
+      Sound.run(ms.map((m, i) => ({m:[m], t:i * .32, dur:.9})).concat([{m:ms, t:ms.length * .32 + .15, dur:1.8, vel:.18}]));
+    }
+    function togglePiano(){ st.piano = !st.piano; render(); }
+    pianoBtn.addEventListener("click", togglePiano);
     function helpKey(q){
       if (q.key) return {key:q.key, note:""};
       const root = q.tri[0], rn = noteName(root);
@@ -1184,6 +1295,7 @@ select:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
     document.addEventListener("keydown", e => {
       if (activeView !== "triads" || e.target.closest("select")) return;
       if (e.key === "h" || e.key === "H"){ toggleHelp(); return; }
+      if (e.key === "k" || e.key === "K"){ togglePiano(); return; }
       if (!st.answered && ["1","2","3","4"].includes(e.key)) answer(+e.key - 1);
       else if (st.answered && e.key === "Enter" && !e.target.closest("button")){ e.preventDefault(); next(); }
     });
@@ -1696,10 +1808,12 @@ select:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
         <div class="row-actions">
           <button class="btn primary" id="mPlay">${playIco} Play</button>
           <button class="btn" id="mDrone">Play over a drone</button>
+          <button class="btn" id="mMel">♫ Hear it in a melody</button>
           <button class="btn" id="mCmp">Compare with ${inf.tonic} ${cmp}</button>
         </div>`;
       document.getElementById("mPlay").addEventListener("click", () => playMode(false));
       document.getElementById("mDrone").addEventListener("click", () => playMode(true));
+      document.getElementById("mMel").addEventListener("click", playMelody);
       document.getElementById("mCmp").addEventListener("click", () => compare(cmp));
     }
     function dotStrip(semis, chg, w = 300){
@@ -1749,6 +1863,62 @@ select:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
       }
       Sound.run(ev);
     }
+    // The chord that shows off each mode's special note, used to vamp under the melody (degree, counted from 0)
+    const COLOUR_CHORD = {Ionian:4, Dorian:3, Phrygian:1, Lydian:1, Mixolydian:6, Aeolian:5, Locrian:1};
+    const MEL_RHYTHMS = [[1,1,1,1],[2,1,1],[1,1,2],[1.5,.5,1,1],[1,.5,.5,2],[.5,.5,1,1,1],[1,1,.5,.5,1]];
+    // play the scale from its home note, then about five seconds of a made-up tune in the mode over a two-chord vamp
+    function playMelody(){
+      const inf = info(byName(st.mode)), m = inf.m;
+      const base = inf.notes.map(n => Sound.midi(n));
+      const P = d => base[mod7(d)] + 12 * Math.floor(d / 7);
+      const ev = runEvents(inf.notes, {container: card, step: .38});
+      const t0 = inf.notes.length * .38 + 1.2;
+      const BAR = 1.25, BEAT = BAR / 4, X = COLOUR_CHORD[m.name];
+      const chordDeg = [0, X, 0, X];
+      const special = m.char.length ? m.char : (m.name === "Ionian" ? [6] : [5]);
+      // backing: a chord for each bar below the tune, then the home chord to finish
+      const home = P(0);
+      const voice = c => {
+        const v = [c, c + 2, c + 4].map(d => { let x = P(d); while (x > home - 6) x -= 12; while (x < home - 18) x += 12; return x; });
+        let bass = P(c); while (bass > home - 14) bass -= 12;
+        return [bass].concat(v.sort((x, y) => x - y));
+      };
+      chordDeg.forEach((c, b) => ev.push({m: voice(c), t: t0 + b * BAR, dur: BAR + .08, vel: .1, sustain: true}));
+      const end = t0 + 4 * BAR;
+      ev.push({m: voice(0), t: end, dur: 2, vel: .1, sustain: true});
+      // melody
+      let cur = pick([0, 2, 4]), notes = [];
+      chordDeg.forEach((c, b) => {
+        const rh = b === 3 ? pick([[1,1,2],[2,1,1],[1,.5,.5,2]]) : pick(MEL_RHYTHMS);
+        const tones = [c, c + 2, c + 4];
+        let beat = 0;
+        rh.forEach((len, i) => {
+          let d;
+          const strong = Number.isInteger(beat);
+          if (i === 0 && b % 2 === 1){
+            // land on the mode's special note when the colour chord arrives
+            const sp = special.find(j => tones.some(t => mod7(t) === j)) ?? special[0];
+            d = nearest(sp, cur);
+          } else if (strong){
+            const opts = tones.map(t => nearest(mod7(t), cur)).filter(x => x !== cur || Math.random() < .2);
+            d = opts.sort((a, b2) => Math.abs(a - cur) - Math.abs(b2 - cur))[Math.random() < .7 ? 0 : 1] ?? cur;
+          } else d = cur + (cur <= 0 ? 1 : cur >= 8 ? -1 : Math.random() < .5 ? 1 : -1);
+          d = Math.max(-1, Math.min(9, d));
+          notes.push({d, t: t0 + b * BAR + beat * BEAT, len: len * BEAT});
+          cur = d; beat += len;
+        });
+      });
+      notes.push({d: nearest(0, cur) <= 3 ? 0 : 7, t: end, len: 1.6});
+      notes.forEach((n, i) => {
+        const ci = n.d === 7 ? 7 : mod7(n.d);
+        ev.push({m:[P(n.d)], t:n.t, dur: i === notes.length - 1 ? 1.7 : Math.max(.3, n.len * 1.15), vel:.24,
+          lit: Math.min(n.len, 1.2) * .9, on: () => lightIn(card, ci, true), off: () => lightIn(card, ci, false)});
+      });
+      Sound.run(ev);
+    }
+    const mod7 = d => ((d % 7) + 7) % 7;
+    // the copy of a scale degree closest to the current note, kept within a comfortable range for the tune
+    const nearest = (deg, cur) => { let best = null; for (let o = -14; o <= 14; o += 7){ const c = mod7(deg) + o; if (c < -1 || c > 9) continue; if (best === null || Math.abs(c - cur) < Math.abs(best - cur)) best = c; } return best; };
     function compare(kind){
       const inf = info(byName(st.mode));
       const r = Sound.midi(inf.notes[0]);
@@ -1947,7 +2117,7 @@ select:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
       document.getElementById("mqLevelMinor").hidden = !quiz || q$.family === "major";
       document.getElementById("modeHint").textContent = quiz
         ? "Press P to play, 1–7 to answer and Enter for the next mode."
-        : "Press 1–7 to choose a mode, P to play it, D to play it over a drone and C to compare.";
+        : "Press 1–7 to choose a mode, P to play it, D to play it over a drone, M to hear it in a melody and C to compare.";
       if (quiz && !q$.q) mqRestart();
     }
     segmented("modeView", setView);
@@ -1972,6 +2142,7 @@ select:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
       const k = e.key.toLowerCase();
       if (k === "p") playMode(false);
       else if (k === "d") playMode(true);
+      else if (k === "m") playMelody();
       else if (k === "c") document.getElementById("mCmp").click();
     });
     fillSelect(); render();
