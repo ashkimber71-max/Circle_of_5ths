@@ -1858,7 +1858,8 @@ svg.piano{display:block; width:100%; height:auto; cursor:pointer}
       if (drone){
         const root = Sound.midi(inf.notes[0]) - 12;
         const len = inf.notes.length * .45 + 1.4;
-        ev.push({m:[root, root + 7], t:0, dur:len, vel:.12, sustain:true});
+        // Locrian's 5th is lowered, so its drone is the home note alone; every other mode keeps the home note and 5th
+        ev.push({m: inf.m.name === "Locrian" ? [root] : [root, root + 7], t:0, dur:len, vel:.12, sustain:true});
         ev.forEach(e => { if (!e.sustain) e.t += .9; });
       }
       Sound.run(ev);
@@ -1878,7 +1879,7 @@ svg.piano{display:block; width:100%; height:auto; cursor:pointer}
       const special = m.char.length ? m.char : (m.name === "Ionian" ? [6] : [5]);
       // drone: the home note in two low octaves, plus the 5th when the mode has a perfect 5th (not in Locrian)
       const home = P(0), end = t0 + 4 * BAR;
-      const drone = [home - 24, home - 12].concat(base[4] - base[0] === 7 ? [home - 5] : []);
+      const drone = m.name === "Locrian" ? [home - 24, home - 12] : [home - 24, home - 12, home - 5];
       ev.push({m: drone, t: 0, dur: end + 2.1, vel: .11, sustain: true});
       // melody: try a few fresh tunes until one uses all seven notes, otherwise patch in the missing ones
       let notes;
