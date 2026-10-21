@@ -1866,27 +1866,35 @@ svg.piano{display:block; width:100%; height:auto; cursor:pointer}
     // The chord that shows off each mode's special note, used to vamp under the melody (degree, counted from 0)
     const COLOUR_CHORD = {Ionian:4, Dorian:3, Phrygian:1, Lydian:1, Mixolydian:6, Aeolian:5, Locrian:1};
     const MEL_RHYTHMS = [[1,1,1,1],[2,1,1],[1,1,2],[1.5,.5,1,1],[1,.5,.5,2],[.5,.5,1,1,1],[1,1,.5,.5,1]];
-    // play the scale from its home note, then about five seconds of a made-up tune in the mode over a two-chord vamp
+    // about five seconds of a made-up tune in the mode over a drone on the home note, using every note of the mode
     function playMelody(){
       const inf = info(byName(st.mode)), m = inf.m;
       const base = inf.notes.map(n => Sound.midi(n));
       const P = d => base[mod7(d)] + 12 * Math.floor(d / 7);
-      const ev = runEvents(inf.notes, {container: card, step: .38});
-      const t0 = inf.notes.length * .38 + 1.2;
+      const ev = [];
+      const t0 = .8;      // let the drone sound for a moment before the tune comes in
       const BAR = 1.25, BEAT = BAR / 4, X = COLOUR_CHORD[m.name];
       const chordDeg = [0, X, 0, X];
       const special = m.char.length ? m.char : (m.name === "Ionian" ? [6] : [5]);
-      // backing: a chord for each bar below the tune, then the home chord to finish
-      const home = P(0);
-      const voice = c => {
-        const v = [c, c + 2, c + 4].map(d => { let x = P(d); while (x > home - 6) x -= 12; while (x < home - 18) x += 12; return x; });
-        let bass = P(c); while (bass > home - 14) bass -= 12;
-        return [bass].concat(v.sort((x, y) => x - y));
-      };
-      chordDeg.forEach((c, b) => ev.push({m: voice(c), t: t0 + b * BAR, dur: BAR + .08, vel: .1, sustain: true}));
-      const end = t0 + 4 * BAR;
-      ev.push({m: voice(0), t: end, dur: 2, vel: .1, sustain: true});
-      // melody
+      // drone: the home note in two low octaves, plus the 5th when the mode has a perfect 5th (not in Locrian)
+      const home = P(0), end = t0 + 4 * BAR;
+      const drone = [home - 24, home - 12].concat(base[4] - base[0] === 7 ? [home - 5] : []);
+      ev.push({m: drone, t: 0, dur: end + 2.1, vel: .11, sustain: true});
+      // melody: try a few fresh tunes until one uses all seven notes, otherwise patch in the missing ones
+      let notes;
+      for (let tries = 0; tries < 40; tries++){
+        notes = makeTune();
+        if (new Set(notes.map(n => mod7(n.d))).size === 7) break;
+      }
+      fillMissing(notes);
+      notes.forEach((n, i) => {
+        const ci = n.d === 7 ? 7 : mod7(n.d);
+        ev.push({m:[P(n.d)], t:n.t, dur: i === notes.length - 1 ? 1.7 : Math.max(.3, n.len * 1.15), vel:.24,
+          lit: Math.min(n.len, 1.2) * .9, on: () => lightIn(card, ci, true), off: () => lightIn(card, ci, false)});
+      });
+      Sound.run(ev);
+
+      function makeTune(){
       let cur = pick([0, 2, 4]), notes = [];
       chordDeg.forEach((c, b) => {
         const rh = b === 3 ? pick([[1,1,2],[2,1,1],[1,.5,.5,2]]) : pick(MEL_RHYTHMS);
@@ -1904,17 +1912,31 @@ svg.piano{display:block; width:100%; height:auto; cursor:pointer}
             d = opts.sort((a, b2) => Math.abs(a - cur) - Math.abs(b2 - cur))[Math.random() < .7 ? 0 : 1] ?? cur;
           } else d = cur + (cur <= 0 ? 1 : cur >= 8 ? -1 : Math.random() < .5 ? 1 : -1);
           d = Math.max(-1, Math.min(9, d));
-          notes.push({d, t: t0 + b * BAR + beat * BEAT, len: len * BEAT});
+          notes.push({d, t: t0 + b * BAR + beat * BEAT, len: len * BEAT, strong, landing: i === 0 && b % 2 === 1});
           cur = d; beat += len;
         });
       });
-      notes.push({d: nearest(0, cur) <= 3 ? 0 : 7, t: end, len: 1.6});
-      notes.forEach((n, i) => {
-        const ci = n.d === 7 ? 7 : mod7(n.d);
-        ev.push({m:[P(n.d)], t:n.t, dur: i === notes.length - 1 ? 1.7 : Math.max(.3, n.len * 1.15), vel:.24,
-          lit: Math.min(n.len, 1.2) * .9, on: () => lightIn(card, ci, true), off: () => lightIn(card, ci, false)});
-      });
-      Sound.run(ev);
+      notes.push({d: nearest(0, cur) <= 3 ? 0 : 7, t: end, len: 1.6, fixed: true});
+      return notes;
+      }
+      // swap passing notes for any scale notes the tune hasn't used yet, choosing the swap that leaves the smoothest line
+      function fillMissing(notes){
+        const used = () => new Set(notes.map(n => mod7(n.d)));
+        for (let deg = 0; deg < 7; deg++){
+          if (used().has(deg)) continue;
+          let best = null;
+          notes.forEach((n, i) => {
+            if (n.fixed || n.landing || i === 0) return;
+            const left = notes.filter(x => mod7(x.d) === mod7(n.d)).length;
+            if (left < 2) return;               // don't remove the only copy of another note
+            const d = nearest(deg, n.d);
+            const prev = notes[i - 1].d, next = notes[i + 1] ? notes[i + 1].d : d;
+            const cost = Math.abs(d - prev) + Math.abs(next - d) + (n.strong ? 3 : 0);
+            if (!best || cost < best.cost) best = {i, d, cost};
+          });
+          if (best) notes[best.i].d = best.d;
+        }
+      }
     }
     const mod7 = d => ((d % 7) + 7) % 7;
     // the copy of a scale degree closest to the current note, kept within a comfortable range for the tune
