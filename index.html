@@ -808,6 +808,81 @@ svg.piano{display:block; width:100%; height:auto; cursor:pointer}
   }
   const playIco = `<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 1.2v11.6L12.5 7z"/></svg>`;
 
+  /* ================= shared melody maker ================= */
+  // About five seconds of a made-up tune over a drone, using every note of the scale at least once.
+  // o.base: MIDI notes for degrees 0–6 going up; o.down: the same coming down, if different (melodic minor)
+  // o.chords: the chord (as a degree) that shapes each of the four bars; o.special: degrees to land on in bars 2 and 4
+  // o.endRun: finish with 5–6–7–8 up to the home note; o.drone: MIDI notes held underneath; o.light(ci, on, down)
+  const mod7 = d => ((d % 7) + 7) % 7;
+  // the copy of a scale degree closest to the current note, kept within a comfortable range for the tune
+  const nearestDeg = (deg, cur) => { let best = null; for (let o = -14; o <= 14; o += 7){ const c = mod7(deg) + o; if (c < -1 || c > 9) continue; if (best === null || Math.abs(c - cur) < Math.abs(best - cur)) best = c; } return best; };
+  const MEL_RHYTHMS = [[1,1,1,1],[2,1,1],[1,1,2],[1.5,.5,1,1],[1,.5,.5,2],[.5,.5,1,1,1],[1,1,.5,.5,1]];
+  function melodyEvents(o){
+    const t0 = .8, BAR = 1.25, BEAT = BAR / 4, end = t0 + 4 * BAR;
+    const P = (d, down) => (down && o.down ? o.down : o.base)[mod7(d)] + 12 * Math.floor(d / 7);
+    const ev = [{m: o.drone, t: 0, dur: end + 2.1, vel: .11, sustain: true}];
+    let notes;
+    for (let tries = 0; tries < 40; tries++){
+      notes = makeTune();
+      if (new Set(notes.map(n => mod7(n.d))).size === 7) break;
+    }
+    fillMissing(notes);
+    notes.forEach((n, i) => {
+      // which way the tune moves next (looking past repeated notes), so melodic minor raises its 6th and 7th only going up
+      const nx = notes.slice(i + 1).find(x => x.d !== n.d), down = !!(nx && nx.d < n.d);
+      const ci = n.d === 7 ? 7 : mod7(n.d);
+      ev.push({m:[P(n.d, down)], t:n.t, dur: i === notes.length - 1 ? 1.7 : Math.max(.3, n.len * 1.15), vel:.24,
+        lit: Math.min(n.len, 1.2) * .9, on: () => o.light(ci, true, down), off: () => o.light(ci, false, down)});
+    });
+    return ev;
+
+    function makeTune(){
+      let cur = pick([0, 2, 4]); const notes = [];
+      o.chords.forEach((c, b) => {
+        if (o.endRun && b === 3){
+          [[4,1],[5,1],[6,2]].forEach(([d, len], i) => notes.push({d, t: t0 + b * BAR + i * BEAT, len: len * BEAT, fixed: true}));
+          cur = 6; return;
+        }
+        const rh = b === 3 ? pick([[1,1,2],[2,1,1],[1,.5,.5,2]]) : pick(MEL_RHYTHMS);
+        const tones = [c, c + 2, c + 4];
+        let beat = 0;
+        rh.forEach((len, i) => {
+          let d;
+          const strong = Number.isInteger(beat), landing = i === 0 && b % 2 === 1;
+          if (landing){
+            // land on the scale's special note when that bar's chord arrives
+            const sp = o.special.find(j => tones.some(t => mod7(t) === j)) ?? o.special[0];
+            d = nearestDeg(sp, cur);
+          } else if (strong){
+            const opts = tones.map(t => nearestDeg(mod7(t), cur)).filter(x => x !== cur || Math.random() < .2);
+            d = opts.sort((a, b2) => Math.abs(a - cur) - Math.abs(b2 - cur))[Math.random() < .7 ? 0 : 1] ?? cur;
+          } else d = cur + (cur <= 0 ? 1 : cur >= 8 ? -1 : Math.random() < .5 ? 1 : -1);
+          d = Math.max(-1, Math.min(9, d));
+          notes.push({d, t: t0 + b * BAR + beat * BEAT, len: len * BEAT, strong, landing});
+          cur = d; beat += len;
+        });
+      });
+      notes.push({d: o.endRun || nearestDeg(0, cur) > 3 ? 7 : 0, t: end, len: 1.6, fixed: true});
+      return notes;
+    }
+    // swap passing notes for any scale notes the tune hasn't used yet, choosing the swap that leaves the smoothest line
+    function fillMissing(notes){
+      for (let deg = 0; deg < 7; deg++){
+        if (notes.some(n => mod7(n.d) === deg)) continue;
+        let best = null;
+        notes.forEach((n, i) => {
+          if (n.fixed || n.landing || i === 0) return;
+          if (notes.filter(x => mod7(x.d) === mod7(n.d)).length < 2) return;   // keep the only copy of another note
+          const d = nearestDeg(deg, n.d);
+          const prev = notes[i - 1].d, next = notes[i + 1] ? notes[i + 1].d : d;
+          const cost = Math.abs(d - prev) + Math.abs(next - d) + (n.strong ? 3 : 0);
+          if (!best || cost < best.cost) best = {i, d, cost};
+        });
+        if (best) notes[best.i].d = best.d;
+      }
+    }
+  }
+
   /* ================= tabs ================= */
   const tabs = [...document.querySelectorAll(".tab")];
   let activeView = "home";
@@ -1578,6 +1653,7 @@ svg.piano{display:block; width:100%; height:auto; cursor:pointer}
         <div class="row-actions">
           <button class="btn primary" data-play="${type}" data-dir="up">${playIco} Play going up</button>
           <button class="btn" data-play="${type}" data-dir="both">Up and down</button>
+          <button class="btn" data-mel="${type}">♫ Hear it in a melody</button>
         </div>
       </article>`;
     }
@@ -1586,6 +1662,20 @@ svg.piano{display:block; width:100%; height:auto; cursor:pointer}
       const notes = seqFor(sc, type, both);
       // ids 0–7 cover the way up; the way down uses 7–14 (the melodic card has its own down stave)
       return runEvents(notes, {container: c, idOf: i => (type !== "melodic" && i > 7) ? 14 - i : i});
+    }
+    // a tune in the scale over a drone. Melodic minor uses its raised 6th and 7th going up and the natural ones coming down,
+    // and every tune ends by climbing 5–6–7–8, where the three scales sound most different
+    function minorMelody(sc, type, light){
+      const up = sc.up[type].map(n => Sound.midi(n)), home = up[0];
+      const down = type === "melodic" ? sc.up.natural.map(n => Sound.midi(n)) : null;
+      return melodyEvents({base: up, down, chords: [0, 4, 0, 4], special: type === "natural" ? [5] : type === "harmonic" ? [6] : [5, 6],
+        endRun: true, drone: [home - 24, home - 12, home - 5], light});
+    }
+    function playCardMelody(sc, type){
+      const c = area.querySelector(`[data-type="${type}"]`);
+      // on the melodic card, lowered 6ths and 7ths light up on the coming-down stave (ids 9 and 8)
+      Sound.run(minorMelody(sc, type, (ci, on, down) =>
+        lightIn(c, type === "melodic" && down && (ci === 5 || ci === 6) ? 14 - ci : ci, on)));
     }
     function renderPractice(){
       const sc = build(keyOf(st.key), st.clef);
@@ -1598,6 +1688,7 @@ svg.piano{display:block; width:100%; height:auto; cursor:pointer}
         <div class="scale-cards">${TYPES.map(t => cardHTML(sc, t)).join("")}</div>`;
       area.querySelectorAll("[data-play]").forEach(b => b.addEventListener("click", () =>
         Sound.run(playCard(sc, b.dataset.play, b.dataset.dir === "both"))));
+      area.querySelectorAll("[data-mel]").forEach(b => b.addEventListener("click", () => playCardMelody(sc, b.dataset.mel)));
       document.getElementById("minAll").addEventListener("click", () => {
         let ev = [], t = 0;
         TYPES.forEach(type => {
@@ -1626,6 +1717,10 @@ svg.piano{display:block; width:100%; height:auto; cursor:pointer}
       st.played = true;
       const b = document.getElementById("minPlay"); if (b) b.innerHTML = `${playIco} Play again`;
     }
+    function playQuestionMelody(){
+      const q = st.q, dots = document.getElementById("minDots");
+      Sound.run(minorMelody(q.sc, q.type, (ci, on) => lightIn(dots, ci, on)));
+    }
     function renderQuiz(){
       const q = st.q, both = st.dir === "both";
       const n = both ? 15 : 8;
@@ -1634,7 +1729,10 @@ svg.piano{display:block; width:100%; height:auto; cursor:pointer}
       let html = `<div class="quiz-card"><div class="listen">
           <p class="ear-key">Starting note: <b>${q.sc.tonic}</b></p>
           <div class="dots" id="minDots" aria-hidden="true">${dots}</div>
-          <button class="btn primary play" id="minPlay">${playIco} ${st.played ? "Play again" : "Play the scale"}</button>
+          <div class="small-actions">
+            <button class="btn primary play" id="minPlay">${playIco} ${st.played ? "Play again" : "Play the scale"}</button>
+            <button class="btn play" id="minMel">♫ Hear it in a melody</button>
+          </div>
         </div>
         <p class="prompt" style="text-align:center">Which minor scale did you hear?</p>
         <div class="options three">${TYPES.map((t, i) => {
@@ -1650,19 +1748,28 @@ svg.piano{display:block; width:100%; height:auto; cursor:pointer}
         if (!ok) fb += `<p>${INFO[st.chosen].listen}</p>`;
         fb += `<div id="minFbStave">${scaleStave(up, q.sc.key, "treble", `${q.sc.tonic} ${q.type} minor`)}</div>`;
         fb += `<div class="row-actions" style="justify-content:center">${TYPES.map(t =>
-          `<button class="btn${t === q.type ? " primary" : ""}" data-hear="${t}">Hear ${t}</button>`).join("")}</div>`;
+          `<button class="btn${t === q.type ? " primary" : ""}" data-hear="${t}">Hear ${t}</button>`).join("")}</div>
+          <div class="row-actions" style="justify-content:center">${TYPES.map(t =>
+          `<button class="btn" data-hearmel="${t}">♫ ${t[0].toUpperCase() + t.slice(1)} in a melody</button>`).join("")}</div>`;
         html += `<div class="feedback" aria-live="polite">${fb}</div>
           <div class="actions"><button class="btn primary" id="minNext">Next scale</button></div>`;
       }
       html += `</div>`;
       area.innerHTML = html;
       document.getElementById("minPlay").addEventListener("click", playQuestion);
+      document.getElementById("minMel").addEventListener("click", playQuestionMelody);
       area.querySelectorAll(".opt").forEach(b => b.addEventListener("click", () => answer(b.dataset.t)));
       area.querySelectorAll("[data-hear]").forEach(b => b.addEventListener("click", () => {
         const t = b.dataset.hear;
         document.getElementById("minFbStave").innerHTML = scaleStave(q.sc.up[t], q.sc.key, "treble", `${q.sc.tonic} ${t} minor`);
         area.querySelectorAll("[data-hear]").forEach(x => x.classList.toggle("primary", x === b));
         Sound.run(runEvents(q.sc.up[t], {container: document.getElementById("minFbStave")}));
+      }));
+      area.querySelectorAll("[data-hearmel]").forEach(b => b.addEventListener("click", () => {
+        const t = b.dataset.hearmel;
+        document.getElementById("minFbStave").innerHTML = scaleStave(q.sc.up[t], q.sc.key, "treble", `${q.sc.tonic} ${t} minor`);
+        area.querySelectorAll("[data-hear]").forEach(x => x.classList.toggle("primary", x.dataset.hear === t));
+        Sound.run(minorMelody(q.sc, t, (ci, on) => lightIn(document.getElementById("minFbStave"), ci, on)));
       }));
       const nx = document.getElementById("minNext");
       if (nx){ nx.addEventListener("click", () => next(true)); nx.focus({preventScroll:true}); }
@@ -1694,8 +1801,8 @@ svg.piano{display:block; width:100%; height:auto; cursor:pointer}
         ? "Listen to a minor scale and decide whether it's natural, harmonic or melodic. The starting note changes each time, so listen to the shape of the scale rather than the pitch."
         : "Every minor key has three versions of its scale. Play each one to hear what changes. Turn your sound on first.";
       document.getElementById("minHint").textContent = quiz
-        ? "Press P to play, 1–3 to answer and Enter for the next scale."
-        : "Press 1, 2 or 3 to play the natural, harmonic or melodic scale.";
+        ? "Press P to play the scale, M to hear it in a melody, 1–3 to answer and Enter for the next scale."
+        : "Press 1, 2 or 3 to play the natural, harmonic or melodic scale, or Q, W or E to hear it in a melody.";
       if (quiz){ if (!st.q) restartQuiz(); else renderQuiz(); }
       else renderPractice();
     }
@@ -1709,9 +1816,11 @@ svg.piano{display:block; width:100%; height:auto; cursor:pointer}
       if (activeView !== "minor" || e.target.closest("select")) return;
       if (st.mode === "practice"){
         if (/^[1-3]$/.test(e.key)){ const sc = build(keyOf(st.key), st.clef); Sound.run(playCard(sc, TYPES[+e.key - 1], false)); }
+        else if (/^[qwe]$/i.test(e.key)){ const sc = build(keyOf(st.key), st.clef); playCardMelody(sc, TYPES["qwe".indexOf(e.key.toLowerCase())]); }
         return;
       }
       if (e.key === "p" || e.key === "P"){ playQuestion(); return; }
+      if (e.key === "m" || e.key === "M"){ playQuestionMelody(); return; }
       if (!st.answered && /^[1-3]$/.test(e.key)) answer(TYPES[+e.key - 1]);
       else if (st.answered && e.key === "Enter" && !e.target.closest("button")){ e.preventDefault(); next(true); }
     });
@@ -1866,82 +1975,17 @@ svg.piano{display:block; width:100%; height:auto; cursor:pointer}
     }
     // The chord that shows off each mode's special note, used to vamp under the melody (degree, counted from 0)
     const COLOUR_CHORD = {Ionian:4, Dorian:3, Phrygian:1, Lydian:1, Mixolydian:6, Aeolian:5, Locrian:1};
-    const MEL_RHYTHMS = [[1,1,1,1],[2,1,1],[1,1,2],[1.5,.5,1,1],[1,.5,.5,2],[.5,.5,1,1,1],[1,1,.5,.5,1]];
-    // about five seconds of a made-up tune in the mode over a drone on the home note, using every note of the mode
     function playMelody(){
       const inf = info(byName(st.mode)), m = inf.m;
-      const base = inf.notes.map(n => Sound.midi(n));
-      const P = d => base[mod7(d)] + 12 * Math.floor(d / 7);
-      const ev = [];
-      const t0 = .8;      // let the drone sound for a moment before the tune comes in
-      const BAR = 1.25, BEAT = BAR / 4, X = COLOUR_CHORD[m.name];
-      const chordDeg = [0, X, 0, X];
-      const special = m.char.length ? m.char : (m.name === "Ionian" ? [6] : [5]);
-      // drone: the home note in two low octaves, plus the 5th when the mode has a perfect 5th (not in Locrian)
-      const home = P(0), end = t0 + 4 * BAR;
-      const drone = m.name === "Locrian" ? [home - 24, home - 12] : [home - 24, home - 12, home - 5];
-      ev.push({m: drone, t: 0, dur: end + 2.1, vel: .11, sustain: true});
-      // melody: try a few fresh tunes until one uses all seven notes, otherwise patch in the missing ones
-      let notes;
-      for (let tries = 0; tries < 40; tries++){
-        notes = makeTune();
-        if (new Set(notes.map(n => mod7(n.d))).size === 7) break;
-      }
-      fillMissing(notes);
-      notes.forEach((n, i) => {
-        const ci = n.d === 7 ? 7 : mod7(n.d);
-        ev.push({m:[P(n.d)], t:n.t, dur: i === notes.length - 1 ? 1.7 : Math.max(.3, n.len * 1.15), vel:.24,
-          lit: Math.min(n.len, 1.2) * .9, on: () => lightIn(card, ci, true), off: () => lightIn(card, ci, false)});
-      });
-      Sound.run(ev);
-
-      function makeTune(){
-      let cur = pick([0, 2, 4]), notes = [];
-      chordDeg.forEach((c, b) => {
-        const rh = b === 3 ? pick([[1,1,2],[2,1,1],[1,.5,.5,2]]) : pick(MEL_RHYTHMS);
-        const tones = [c, c + 2, c + 4];
-        let beat = 0;
-        rh.forEach((len, i) => {
-          let d;
-          const strong = Number.isInteger(beat);
-          if (i === 0 && b % 2 === 1){
-            // land on the mode's special note when the colour chord arrives
-            const sp = special.find(j => tones.some(t => mod7(t) === j)) ?? special[0];
-            d = nearest(sp, cur);
-          } else if (strong){
-            const opts = tones.map(t => nearest(mod7(t), cur)).filter(x => x !== cur || Math.random() < .2);
-            d = opts.sort((a, b2) => Math.abs(a - cur) - Math.abs(b2 - cur))[Math.random() < .7 ? 0 : 1] ?? cur;
-          } else d = cur + (cur <= 0 ? 1 : cur >= 8 ? -1 : Math.random() < .5 ? 1 : -1);
-          d = Math.max(-1, Math.min(9, d));
-          notes.push({d, t: t0 + b * BAR + beat * BEAT, len: len * BEAT, strong, landing: i === 0 && b % 2 === 1});
-          cur = d; beat += len;
-        });
-      });
-      notes.push({d: nearest(0, cur) <= 3 ? 0 : 7, t: end, len: 1.6, fixed: true});
-      return notes;
-      }
-      // swap passing notes for any scale notes the tune hasn't used yet, choosing the swap that leaves the smoothest line
-      function fillMissing(notes){
-        const used = () => new Set(notes.map(n => mod7(n.d)));
-        for (let deg = 0; deg < 7; deg++){
-          if (used().has(deg)) continue;
-          let best = null;
-          notes.forEach((n, i) => {
-            if (n.fixed || n.landing || i === 0) return;
-            const left = notes.filter(x => mod7(x.d) === mod7(n.d)).length;
-            if (left < 2) return;               // don't remove the only copy of another note
-            const d = nearest(deg, n.d);
-            const prev = notes[i - 1].d, next = notes[i + 1] ? notes[i + 1].d : d;
-            const cost = Math.abs(d - prev) + Math.abs(next - d) + (n.strong ? 3 : 0);
-            if (!best || cost < best.cost) best = {i, d, cost};
-          });
-          if (best) notes[best.i].d = best.d;
-        }
-      }
+      const base = inf.notes.map(n => Sound.midi(n)), home = base[0];
+      Sound.run(melodyEvents({
+        base, chords: [0, COLOUR_CHORD[m.name], 0, COLOUR_CHORD[m.name]],
+        special: m.char.length ? m.char : (m.name === "Ionian" ? [6] : [5]),
+        // Locrian's 5th is lowered, so its drone is the home note alone
+        drone: m.name === "Locrian" ? [home - 24, home - 12] : [home - 24, home - 12, home - 5],
+        light: (ci, on) => lightIn(card, ci, on)
+      }));
     }
-    const mod7 = d => ((d % 7) + 7) % 7;
-    // the copy of a scale degree closest to the current note, kept within a comfortable range for the tune
-    const nearest = (deg, cur) => { let best = null; for (let o = -14; o <= 14; o += 7){ const c = mod7(deg) + o; if (c < -1 || c > 9) continue; if (best === null || Math.abs(c - cur) < Math.abs(best - cur)) best = c; } return best; };
     function compare(kind){
       const inf = info(byName(st.mode));
       const r = Sound.midi(inf.notes[0]);
